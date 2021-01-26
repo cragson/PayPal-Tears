@@ -1,9 +1,25 @@
 # written by cragson
+#!/usr/bin/env python
 
 import csv
 import os.path
 
 wallet = { "EUR": 0.0, "USD": 0.0, "GBP": 0.0, "RUB": 0.0 }
+
+filter_list = []
+
+def parse_all_filter():
+    global filter_list
+    ret = []
+    with open( "filter.list", 'r', encoding='utf-8') as _filter:
+        _content = _filter.readlines()
+        for _elem in _content:
+            ret.append( _elem.strip() )
+    _filter.close()
+
+    filter_list = ret
+
+    return
 
 def parse_all_currencies( data ):
     currencies = []
@@ -23,7 +39,7 @@ def check_if_csv_exists():
 
 def parse_csv_as_list():
     ret = []
-    with open( "Download.CSV", "r", encoding="utf8") as _csv_file:
+    with open( "Download.CSV", 'r', encoding='utf-8') as _csv_file:
         data = csv.DictReader( _csv_file )
         for _elem in data:
             ret.append( _elem )
@@ -38,8 +54,13 @@ def parse_brutto_price_from_entry( ENTRY ):
     pass
 
 def main():
+    
+    global wallet, filter_list
 
-    global wallet
+    parse_all_filter()
+
+    print( filter_list )
+
     
     print("[+] PayPal Tears [+]")
     print("\t Heul nicht, wenn du siehst wie viel Kohle du über PayPal verballert hast!")
@@ -55,10 +76,26 @@ def main():
 
     kohle = 0.0
 
+    is_filter_enabled = len( filter_list ) > 0
+
+    print( len( filter_list ) )
+
+    elem_found = False
+    
     for _elem in data:
 
         if "Zahlung" not in _elem["Typ"]:
             continue
+
+        if is_filter_enabled:
+            for current_filter in filter_list:
+                if current_filter in _elem["Name"].strip().lower():
+                    elem_found = True
+
+        if( is_filter_enabled and elem_found == False ):
+            continue
+
+        elem_found = False
         
         val = float( _elem["Brutto"].replace("-", "" ).replace(".", "" ).replace("," ,"." ) )
 
@@ -91,7 +128,12 @@ def main():
 
     for _key in sorted( wallet.keys() ):
         print(_key, "=>", round( wallet[ _key ], 2 ) )
-    
+
+    if is_filter_enabled:
+        print( "[+] Used filters:", " ".join( filter_list ) )
+    else:
+        print( "[-] No filter were used!" )
+        
     print( "\n[>] Kohle verballert:", round( kohle, 2 ), "€" )
     
 
